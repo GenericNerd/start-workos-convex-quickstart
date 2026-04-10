@@ -1,15 +1,16 @@
 import { v } from "convex/values"
-import { actorFields, baseFields } from "../base"
+import { baseFields } from "../base"
 
 const vSessionCreateEvent = v.object({
   event: v.literal("session.create"),
   ...baseFields,
   data: v.object({
     target: v.object({
-      ...actorFields,
+      id: v.string(),
+      type: v.literal("session"),
+      userId: v.id("users"),
     }),
     metadata: v.object({
-      sessionId: v.string(),
       reason: v.optional(v.string()),
     }),
     context: v.object({
@@ -24,7 +25,9 @@ const vSessionRevokeEvent = v.object({
   ...baseFields,
   data: v.object({
     target: v.object({
-      ...actorFields,
+      id: v.string(),
+      type: v.literal("session"),
+      userId: v.id("users"),
     }),
     metadata: v.object({
       reason: v.optional(v.string()),

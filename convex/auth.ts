@@ -148,11 +148,11 @@ export const { authKitEvent } = authKit.events({
       status: "success",
       data: {
         target: {
-          id: target._id,
-          type: "user",
+          id: event.data.id,
+          type: "session",
+          userId: target._id,
         },
         metadata: {
-          sessionId: event.data.id,
           reason: reason ?? "Logged in",
         },
         context: {
@@ -189,8 +189,9 @@ export const { authKitEvent } = authKit.events({
       status: "success",
       data: {
         target: {
-          id: target._id,
-          type: "user",
+          id: event.data.id,
+          type: "session",
+          userId: target._id,
         },
         metadata: {
           reason: reason ?? "Logged out",
