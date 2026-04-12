@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { getAuth } from "@workos/authkit-tanstack-react-start"
+import { safeDecodeURIComponent } from "@/lib/utils"
 
 export const Route = createFileRoute("/_unauthenticated")({
   validateSearch: (search) =>
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/_unauthenticated")({
     },
   loaderDeps: ({ search: { returnPathname } }) => ({
     returnPathname: returnPathname
-      ? decodeURIComponent(returnPathname)
+      ? safeDecodeURIComponent(returnPathname)
       : undefined,
   }),
   loader: async ({ deps: { returnPathname } }) => {

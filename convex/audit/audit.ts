@@ -1,17 +1,26 @@
-import { Infer, v } from "convex/values"
-import { vUserCreateEvent, vUserDeleteEvent } from "./events/user"
-import { internalMutation, MutationCtx } from "../_generated/server"
+import { v } from "convex/values"
 import { internal } from "../_generated/api"
+import { internalMutation } from "../_generated/server"
 import { vSessionCreateEvent, vSessionRevokeEvent } from "./events/session"
+import { vUserCreateEvent, vUserDeleteEvent } from "./events/user"
+import type { MutationCtx } from "../_generated/server"
+import type { Infer } from "convex/values"
 
 const vAuditEvent = v.union(vUserCreateEvent, vSessionCreateEvent)
 const vAuditChange = v.union(vUserDeleteEvent, vSessionRevokeEvent)
 
+export const vAuditLog = v.union(
+  vUserCreateEvent,
+  vSessionCreateEvent,
+  vUserDeleteEvent,
+  vSessionRevokeEvent
+)
+
 type AuditEvent = Infer<typeof vAuditEvent>
 type AuditChange = Infer<typeof vAuditChange>
 
-export const log = async (ctx: MutationCtx, log: AuditEvent) => {
-  await ctx.runMutation(internal.audit.audit.writeLog, { log })
+export const log = async (ctx: MutationCtx, event: AuditEvent) => {
+  await ctx.runMutation(internal.audit.audit.writeLog, { event })
 }
 
 export const logChange = async (ctx: MutationCtx, change: AuditChange) => {
@@ -28,9 +37,9 @@ export const maskEmail = (email: string): string => {
 }
 
 export const writeLog = internalMutation({
-  args: v.object({ log: vAuditEvent }),
+  args: v.object({ event: vAuditEvent }),
   handler: async (ctx, args) => {
-    await ctx.db.insert("auditLogs", { ...args.log })
+    await ctx.db.insert("auditLogs", { ...args.event })
   },
 })
 

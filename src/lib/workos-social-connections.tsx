@@ -1,13 +1,14 @@
-import AppleLogo from "@/components/logos/apple"
-import GitHubLogo from "@/components/logos/github"
-import GoogleLogo from "@/components/logos/google"
-import MicrosoftLogo from "@/components/logos/microsoft"
 import { createServerFn } from "@tanstack/react-start"
 import { zodValidator } from "@tanstack/zod-adapter"
 import { WorkOS } from "@workos-inc/node"
 import z from "zod"
+import type { ReactNode } from "react"
+import AppleLogo from "@/components/logos/apple"
+import GitHubLogo from "@/components/logos/github"
+import GoogleLogo from "@/components/logos/google"
+import MicrosoftLogo from "@/components/logos/microsoft"
 
-export function providerToIcon(provider: string) {
+export function providerToIcon(provider: string): ReactNode {
   switch (provider) {
     case "Google":
       return <GoogleLogo className="size-4" />
@@ -17,6 +18,8 @@ export function providerToIcon(provider: string) {
       return <AppleLogo className="size-4" />
     case "GitHub":
       return <GitHubLogo className="size-4" />
+    default:
+      return null
   }
 }
 
@@ -31,7 +34,7 @@ export const listConnections = createServerFn()
   )
   .handler(async ({ data }) => {
     // TODO: Replace with singleton
-    const workOS = new WorkOS(process.env.WORKOS_API_KEY!)
+    const workOS = new WorkOS(process.env.WORKOS_API_KEY)
 
     const availableProviders = [
       {

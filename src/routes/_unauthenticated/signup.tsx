@@ -1,13 +1,13 @@
+import { Link, createFileRoute } from "@tanstack/react-router"
 import Logo from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   listConnections,
   providerToIcon,
 } from "@/lib/workos-social-connections"
-import { authErrorToMessage } from "@/lib/utils"
+import { authErrorToMessage, safeDecodeURIComponent } from "@/lib/utils"
 
 export const Route = createFileRoute("/_unauthenticated/signup")({
   component: RouteComponent,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_unauthenticated/signup")({
     },
   loaderDeps: ({ search: { returnPathname, error } }) => ({
     returnPathname: returnPathname
-      ? decodeURIComponent(returnPathname)
+      ? safeDecodeURIComponent(returnPathname)
       : undefined,
     error,
   }),

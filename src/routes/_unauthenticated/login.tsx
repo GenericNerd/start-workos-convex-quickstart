@@ -1,25 +1,25 @@
-import Logo from "@/components/logo"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { WorkOS } from "@workos-inc/node"
 import { z } from "zod"
 import { zodValidator } from "@tanstack/zod-adapter"
 import { ArrowRight } from "lucide-react"
 import { formOptions, useForm } from "@tanstack/react-form-start"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import { getCookie, setCookie } from "@tanstack/react-start/server"
+import { Input } from "@/components/ui/input"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Separator } from "@/components/ui/separator"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Logo from "@/components/logo"
 import { Badge } from "@/components/ui/badge"
 import {
   listConnections,
   providerToIcon,
 } from "@/lib/workos-social-connections"
-import { authErrorToMessage } from "@/lib/utils"
+import { authErrorToMessage, safeDecodeURIComponent } from "@/lib/utils"
 
 const getSSOUrl = createServerFn()
   .inputValidator(
@@ -31,7 +31,7 @@ const getSSOUrl = createServerFn()
     )
   )
   .handler(async ({ data }) => {
-    const workOS = new WorkOS(process.env.WORKOS_API_KEY!)
+    const workOS = new WorkOS(process.env.WORKOS_API_KEY)
 
     const connection = await workOS.sso.listConnections({
       domain: data.domain,
@@ -44,7 +44,7 @@ const getSSOUrl = createServerFn()
     return workOS.sso.getAuthorizationUrl({
       clientId: process.env.WORKOS_CLIENT_ID!,
       redirectUri: process.env.WORKOS_REDIRECT_URI!,
-      organization: connection.data[0].organizationId!,
+      organization: connection.data[0].organizationId,
       state: data.returnPathname,
     })
   })
@@ -85,7 +85,7 @@ export const Route = createFileRoute("/_unauthenticated/login")({
     },
   loaderDeps: ({ search: { returnPathname, error } }) => ({
     returnPathname: returnPathname
-      ? decodeURIComponent(returnPathname)
+      ? safeDecodeURIComponent(returnPathname)
       : undefined,
     error,
   }),
@@ -124,8 +124,12 @@ function RouteComponent() {
       let ssoUrl: string | undefined = undefined
       try {
         const domain = value.email.split("@")[1]
+        if (!domain) {
+          setShowSSO(false)
+          return
+        }
         ssoUrl = await getSSOUrl({ data: { domain } })
-      } catch (error) {
+      } catch {
         setShowSSO(false)
         return
       }

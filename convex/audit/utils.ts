@@ -1,4 +1,5 @@
-import { Infer, PropertyValidators, v, Validator } from "convex/values"
+import { v } from "convex/values"
+import type { Infer, PropertyValidators, Validator } from "convex/values"
 
 type LinkedType<T extends PropertyValidators> = UnionToIntersection<
   {
@@ -9,9 +10,9 @@ type LinkedType<T extends PropertyValidators> = UnionToIntersection<
   }[keyof T]
 >
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void
+type UnionToIntersection<TMember> = (
+  TMember extends unknown ? (k: TMember) => void : never
+) extends (k: infer I) => void
   ? I
   : never
 
@@ -20,7 +21,7 @@ export function changeValidator<T extends PropertyValidators>(
 ): Validator<LinkedType<T>> {
   const keys = Object.keys(mapping)
 
-  function getPermutations(remainingKeys: string[]): any[] {
+  function getPermutations(remainingKeys: Array<string>): Array<any> {
     if (remainingKeys.length === 0) {
       return [{ before: {}, after: {} }]
     }

@@ -1,18 +1,63 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getAuthkit } from "@workos/authkit-tanstack-react-start"
-import { workOsOAuthRawDataFromCatch } from "@/lib/workos-oauth-error"
 import { WorkOS } from "@workos-inc/node"
+import type { WorkOsOAuthRawData } from "@/lib/workos-oauth-error"
+import { workOsOAuthRawDataFromCatch } from "@/lib/workos-oauth-error"
 
-function extractSessionHeaders(result: any): Record<string, string> {
-  const setCookie = result?.response?.headers?.get?.("Set-Cookie")
+function parseOAuthState(rawState: string):
+  | {
+      returnPathname: string | undefined
+      errorPathname: string
+    }
+  | undefined {
+  try {
+    const parsed: unknown = JSON.parse(atob(rawState))
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !("errorPathname" in parsed) ||
+      typeof (parsed as { errorPathname: unknown }).errorPathname !== "string"
+    ) {
+      return undefined
+    }
+    const { returnPathname, errorPathname } = parsed as {
+      returnPathname?: unknown
+      errorPathname: string
+    }
+    return {
+      errorPathname,
+      returnPathname:
+        typeof returnPathname === "string" ? returnPathname : undefined,
+    }
+  } catch {
+    return undefined
+  }
+}
+
+function firstSsoConnectionId(raw: WorkOsOAuthRawData): string | undefined {
+  const ids = raw.connection_ids
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return undefined
+  }
+  const first = ids[0]
+  return typeof first === "string" ? first : undefined
+}
+
+function extractSessionHeaders(result: unknown): Record<string, string> {
+  if (typeof result !== "object" || result === null) {
+    return {}
+  }
+  const r = result as {
+    response?: { headers?: { get?: (name: string) => string | null } }
+    headers?: Record<string, string>
+  }
+  const setCookie = r.response?.headers?.get?.("Set-Cookie")
   if (setCookie) {
     return { "Set-Cookie": setCookie }
   }
-
-  if (result?.headers && typeof result.headers === "object") {
-    return result.headers
+  if (r.headers && typeof r.headers === "object") {
+    return r.headers
   }
-
   return {}
 }
 
@@ -30,10 +75,13 @@ export const Route = createFileRoute("/api/auth/callback")({
             headers: { "Content-Type": "application/json" },
           })
         }
-        const state: {
-          returnPathname: string | undefined
-          errorPathname: string
-        } = JSON.parse(atob(rawState))
+        const state = parseOAuthState(rawState)
+        if (!state) {
+          return new Response(JSON.stringify({ error: "invalid_state" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          })
+        }
 
         if (!code) {
           return new Response(null, {
@@ -83,11 +131,26 @@ export const Route = createFileRoute("/api/auth/callback")({
 
             if (rawData.error) {
               if (rawData.error === "sso_required") {
-                const workOS = new WorkOS(process.env.WORKOS_API_KEY!)
-                const connection = await workOS.sso.getConnection(
-                  rawData.connection_ids as string[][0]
-                )
-                if (!connection) {
+                const connectionId = firstSsoConnectionId(rawData)
+                if (!connectionId) {
+                  return new Response(null, {
+                    status: 307,
+                    headers: {
+                      Location: state.errorPathname.replace(
+                        "{{error}}",
+                        "sso_connection_not_found"
+                      ),
+                    },
+                  })
+                }
+                const apiKey = process.env.WORKOS_API_KEY
+                if (!apiKey) {
+                  throw new Error("WORKOS_API_KEY is not set")
+                }
+                const workOS = new WorkOS(apiKey)
+                const connection = await workOS.sso.getConnection(connectionId)
+                const organizationId = connection.organizationId
+                if (!organizationId) {
                   return new Response(null, {
                     status: 307,
                     headers: {
@@ -101,7 +164,7 @@ export const Route = createFileRoute("/api/auth/callback")({
 
                 const ssoUrl = workOS.sso.getAuthorizationUrl({
                   clientId: process.env.WORKOS_CLIENT_ID!,
-                  organization: connection.organizationId!,
+                  organization: organizationId,
                   state: rawState,
                   redirectUri: process.env.WORKOS_REDIRECT_URI!,
                 })

@@ -1,9 +1,11 @@
-import { type AuthFunctions, AuthKit } from "@convex-dev/workos-authkit"
-import { components, internal } from "./_generated/api"
-import type { DataModel } from "./_generated/dataModel"
-import { log, logChange, maskEmail } from "./audit/audit"
-import { internalAction, MutationCtx, QueryCtx } from "./_generated/server"
+import { AuthKit } from "@convex-dev/workos-authkit"
 import { v } from "convex/values"
+import { log, logChange, maskEmail } from "./audit/audit"
+import { components, internal } from "./_generated/api"
+import { internalAction } from "./_generated/server"
+import type { DataModel } from "./_generated/dataModel"
+import type { AuthFunctions } from "@convex-dev/workos-authkit"
+import type { MutationCtx, QueryCtx } from "./_generated/server"
 
 export const authKit: AuthKit<DataModel> = new AuthKit<DataModel>(
   components.workOSAuthKit,
@@ -18,7 +20,7 @@ export const updateUserExternalId = internalAction({
     userId: v.string(),
     externalId: v.id("users"),
   }),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     await authKit.workos.userManagement.updateUser({
       userId: args.userId,
       externalId: args.externalId,
@@ -30,18 +32,18 @@ async function workOSAuthKitIdToUser(
   ctx: QueryCtx | MutationCtx,
   workOSAuthKitId: string
 ) {
-  // TODO: Replace with index later
   return await ctx.db
     .query("users")
-    .filter((q) => q.eq(q.field("workOSAuthKitId"), workOSAuthKitId))
+    .withIndex("by_workOSAuthKitId", (q) =>
+      q.eq("workOSAuthKitId", workOSAuthKitId)
+    )
     .first()
 }
 
 async function emailToUser(ctx: QueryCtx | MutationCtx, email: string) {
-  // TODO: Replace with index later
   return await ctx.db
     .query("users")
-    .filter((q) => q.eq(q.field("email"), email))
+    .withIndex("by_email", (q) => q.eq("email", email))
     .first()
 }
 
@@ -82,8 +84,8 @@ export const { authKitEvent } = authKit.events({
     })
     return
   },
-  "user.updated": async (ctx, event) => {
-    return
+  "user.updated": (_ctx, _event) => {
+    return Promise.resolve()
   },
   "user.deleted": async (ctx, event) => {
     const user = await workOSAuthKitIdToUser(ctx, event.data.id)
