@@ -8,7 +8,7 @@ Use it as a starting point for a full-stack app with managed auth and a real-tim
 
 - Login and signup flows with social providers and optional email-domain SSO (configured in WorkOS and toggled with env vars).
 - OAuth callback route at `/api/auth/callback` and AuthKit session handling (`@workos/authkit-tanstack-react-start`).
-- Convex **AuthKit component** plus app-level `**users`** table and **audit log\*\* wiring in `convex/auth.ts` (user/session lifecycle events).
+- Convex **AuthKit component** plus app-level **`users`** table and **`auditLogs`** wiring in `convex/auth.ts` (user/session lifecycle events).
 - **Convex React Query** client setup in `src/router.tsx` (`VITE_CONVEX_URL`).
 
 ## Prerequisites
@@ -29,13 +29,13 @@ Use it as a starting point for a full-stack app with managed auth and a real-tim
 2. **Convex** — link the project and run the dev deployment (do not use `deploy` for everyday local work):
 
 ```bash
- npx convex dev
+ pnpm dlx convex dev
 ```
 
 This updates `CONVEX_DEPLOYMENT` and related settings. Copy deployment URL values into your env file as described below. 3. **Environment variables** — create `.env.local` at the repo root (see [Environment variables](#environment-variables)). Never commit real secrets. 4. **WorkOS dashboard** — create an AuthKit application and:
 
 - Set the **redirect URI** to match `WORKOS_REDIRECT_URI` (default for this template: `http://localhost:3000/api/auth/callback` when using `pnpm dev` on port 3000).
-- Enable the sign-in methods (Google, Microsoft, SSO, etc.) that you turn on with the optional `VITE_`\* flags.
+- Enable the sign-in methods (Google, Microsoft, SSO, etc.) that you turn on with the optional `VITE_*` flags.
 
 5. **Run the app**:
 
@@ -43,17 +43,17 @@ This updates `CONVEX_DEPLOYMENT` and related settings. Copy deployment URL value
  pnpm dev
 ```
 
-6. **Convex + WorkOS** — configure the WorkOS AuthKit integration in the Convex dashboard as required by `[@convex-dev/workos-authkit](https://www.npmjs.com/package/@convex-dev/workos-authkit)` (API key, webhook secret, client id, etc.). The exact knobs live in the Convex UI and the package docs; this repo assumes that wiring is completed so webhooks and JWT validation work.
+6. **Convex + WorkOS** — configure the WorkOS AuthKit integration in the Convex dashboard as required by [`@convex-dev/workos-authkit`](https://www.npmjs.com/package/@convex-dev/workos-authkit) (API key, webhook secret, client id, etc.). The exact knobs live in the Convex UI and the package docs; this repo assumes that wiring is completed so webhooks and JWT validation work.
 
 ## Environment variables
 
-Put these in `**.env.local`\*\* (gitignored). Names match what this codebase and Convex tooling expect.
+Put these in **`.env.local`** (gitignored). Names match what this codebase and Convex tooling expect.
 
 ### Required for local development
 
 | Variable                 | Description                                                                                                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONVEX_DEPLOYMENT`      | Convex dev deployment slug (often written automatically when you run `npx convex dev`).                                                                        |
+| `CONVEX_DEPLOYMENT`      | Convex dev deployment slug (often written automatically when you run `pnpm dlx convex dev`).                                                                   |
 | `VITE_CONVEX_URL`        | Convex **HTTP** URL for the browser and Vite (`https://<deployment>.convex.cloud`). Required by `src/router.tsx`.                                              |
 | `VITE_CONVEX_SITE_URL`   | Convex **site** URL (`https://<deployment>.convex.site`). Used with Convex hosting / site features; keep it aligned with your deployment.                      |
 | `WORKOS_CLIENT_ID`       | WorkOS AuthKit **client ID**.                                                                                                                                  |
@@ -61,7 +61,7 @@ Put these in `**.env.local`\*\* (gitignored). Names match what this codebase and
 | `WORKOS_REDIRECT_URI`    | Must exactly match the redirect URI configured in WorkOS and your running app (scheme, host, port, path).                                                      |
 | `WORKOS_COOKIE_PASSWORD` | Long random string used by AuthKit to seal the session cookie ([AuthKit TanStack Start](https://github.com/workos/authkit-tanstack-react-start) requirements). |
 
-Keep the **required** block together at the top of `.env.local`. Anything **after** that (in this template, from about **line 12 onward**) is **optional**: extra auth-related `VITE_`\* toggles only—omit them or set them to `true` as needed.
+Keep the **required** block together at the top of `.env.local`. Anything **after** that (in this template, from about **line 12 onward**) is **optional**: extra auth-related `VITE_*` toggles only—omit them or set them to `true` as needed.
 
 ### Optional — auth UI and providers
 
