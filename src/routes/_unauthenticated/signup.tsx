@@ -9,7 +9,7 @@ import {
 } from "@/lib/workos-social-connections"
 import { authErrorToMessage } from "@/lib/utils"
 
-export const Route = createFileRoute("/signup")({
+export const Route = createFileRoute("/_unauthenticated/signup")({
   component: RouteComponent,
   validateSearch: (search) =>
     search as {
@@ -17,7 +17,9 @@ export const Route = createFileRoute("/signup")({
       error?: string | undefined
     },
   loaderDeps: ({ search: { returnPathname, error } }) => ({
-    returnPathname,
+    returnPathname: returnPathname
+      ? decodeURIComponent(returnPathname)
+      : undefined,
     error,
   }),
   loader: async ({ deps: { returnPathname, error } }) => {

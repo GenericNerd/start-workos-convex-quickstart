@@ -76,7 +76,7 @@ const setLastUsedLoginMethod = createServerFn()
     })
   })
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/_unauthenticated/login")({
   component: RouteComponent,
   validateSearch: (search) =>
     search as {
@@ -84,7 +84,9 @@ export const Route = createFileRoute("/login")({
       error?: string | undefined
     },
   loaderDeps: ({ search: { returnPathname, error } }) => ({
-    returnPathname,
+    returnPathname: returnPathname
+      ? decodeURIComponent(returnPathname)
+      : undefined,
     error,
   }),
   loader: async ({ deps: { returnPathname, error } }) => {
