@@ -6,6 +6,7 @@ import { internalAction } from "./_generated/server"
 import type { DataModel } from "./_generated/dataModel"
 import type { AuthFunctions } from "@convex-dev/workos-authkit"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
+import { getUserByAuthKitId } from "./auth/utils"
 
 export const authKit: AuthKit<DataModel> = new AuthKit<DataModel>(
   components.workOSAuthKit,
@@ -27,18 +28,6 @@ export const updateUserExternalId = internalAction({
     })
   },
 })
-
-async function workOSAuthKitIdToUser(
-  ctx: QueryCtx | MutationCtx,
-  workOSAuthKitId: string
-) {
-  return await ctx.db
-    .query("users")
-    .withIndex("by_workOSAuthKitId", (q) =>
-      q.eq("workOSAuthKitId", workOSAuthKitId)
-    )
-    .first()
-}
 
 async function emailToUser(ctx: QueryCtx | MutationCtx, email: string) {
   return await ctx.db
@@ -88,7 +77,7 @@ export const { authKitEvent } = authKit.events({
     return Promise.resolve()
   },
   "user.deleted": async (ctx, event) => {
-    const user = await workOSAuthKitIdToUser(ctx, event.data.id)
+    const user = await getUserByAuthKitId(ctx, event.data.id)
     if (!user) {
       throw new Error("User not found")
     }
@@ -125,7 +114,7 @@ export const { authKitEvent } = authKit.events({
     return
   },
   "session.created": async (ctx, event) => {
-    const target = await workOSAuthKitIdToUser(ctx, event.data.userId)
+    const target = await getUserByAuthKitId(ctx, event.data.userId)
     if (!target) {
       throw new Error("User not found")
     }
@@ -166,7 +155,7 @@ export const { authKitEvent } = authKit.events({
     return
   },
   "session.revoked": async (ctx, event) => {
-    const target = await workOSAuthKitIdToUser(ctx, event.data.userId)
+    const target = await getUserByAuthKitId(ctx, event.data.userId)
     if (!target) {
       throw new Error("User not found")
     }

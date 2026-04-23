@@ -14,7 +14,9 @@ import type * as audit_events_session from "../audit/events/session.js";
 import type * as audit_events_user from "../audit/events/user.js";
 import type * as audit_utils from "../audit/utils.js";
 import type * as auth from "../auth.js";
+import type * as auth_utils from "../auth/utils.js";
 import type * as http from "../http.js";
+import type * as user from "../user.js";
 
 import type {
   ApiFromModules,
@@ -29,7 +31,9 @@ declare const fullApi: ApiFromModules<{
   "audit/events/user": typeof audit_events_user;
   "audit/utils": typeof audit_utils;
   auth: typeof auth;
+  "auth/utils": typeof auth_utils;
   http: typeof http;
+  user: typeof user;
 }>;
 
 /**

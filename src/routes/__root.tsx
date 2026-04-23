@@ -6,12 +6,26 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { QueryClient } from "@tanstack/react-query"
-import { AuthKitProvider } from "@workos/authkit-tanstack-react-start/client"
 
 import appCss from "../styles.css?url"
+import { createServerFn } from "@tanstack/react-start"
+import { getAuth } from "@workos/authkit-tanstack-react-start"
+import type { ConvexQueryClient } from "@convex-dev/react-query"
+import type { ConvexReactClient } from "convex/react"
+
+const fetchWorkOsAuth = createServerFn().handler(async () => {
+  const auth = await getAuth()
+  const { user } = auth
+  return {
+    userId: user?.id ?? null,
+    token: user ? auth.accessToken : null,
+  }
+})
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
+  convexClient: ConvexReactClient
+  convexQueryClient: ConvexQueryClient
 }>()({
   head: () => ({
     meta: [
@@ -34,31 +48,36 @@ export const Route = createRootRouteWithContext<{
     ],
   }),
   shellComponent: RootDocument,
+  beforeLoad: async (ctx) => {
+    const { userId, token } = await fetchWorkOsAuth()
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token)
+    }
+    return { userId, token }
+  },
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <AuthKitProvider>
-      <html lang="en">
-        <head>
-          <HeadContent />
-        </head>
-        <body>
-          {children}
-          <TanStackDevtools
-            config={{
-              position: "bottom-right",
-            }}
-            plugins={[
-              {
-                name: "Tanstack Router",
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
-          <Scripts />
-        </body>
-      </html>
-    </AuthKitProvider>
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <TanStackDevtools
+          config={{
+            position: "bottom-right",
+          }}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+          ]}
+        />
+        <Scripts />
+      </body>
+    </html>
   )
 }
