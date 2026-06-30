@@ -1,65 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getAuthkit } from "@workos/authkit-tanstack-react-start"
-import { WorkOS } from "@workos-inc/node"
-import type { WorkOsOAuthRawData } from "@/lib/workos-oauth-error"
+import {
+  applySessionHeaders,
+  extractSessionHeaders,
+  firstSsoConnectionId,
+  parseOAuthState,
+} from "@/lib/oauth-callback"
+import { getWorkOS } from "@/lib/workos"
 import { workOsOAuthRawDataFromCatch } from "@/lib/workos-oauth-error"
-
-function parseOAuthState(rawState: string):
-  | {
-      returnPathname: string | undefined
-      errorPathname: string
-    }
-  | undefined {
-  try {
-    const parsed: unknown = JSON.parse(atob(rawState))
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      !("errorPathname" in parsed) ||
-      typeof (parsed as { errorPathname: unknown }).errorPathname !== "string"
-    ) {
-      return undefined
-    }
-    const { returnPathname, errorPathname } = parsed as {
-      returnPathname?: unknown
-      errorPathname: string
-    }
-    return {
-      errorPathname,
-      returnPathname:
-        typeof returnPathname === "string" ? returnPathname : undefined,
-    }
-  } catch {
-    return undefined
-  }
-}
-
-function firstSsoConnectionId(raw: WorkOsOAuthRawData): string | undefined {
-  const ids = raw.connection_ids
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return undefined
-  }
-  const first = ids[0]
-  return typeof first === "string" ? first : undefined
-}
-
-function extractSessionHeaders(result: unknown): Record<string, string> {
-  if (typeof result !== "object" || result === null) {
-    return {}
-  }
-  const r = result as {
-    response?: { headers?: { get?: (name: string) => string | null } }
-    headers?: Record<string, string>
-  }
-  const setCookie = r.response?.headers?.get?.("Set-Cookie")
-  if (setCookie) {
-    return { "Set-Cookie": setCookie }
-  }
-  if (r.headers && typeof r.headers === "object") {
-    return r.headers
-  }
-  return {}
-}
 
 export const Route = createFileRoute("/api/auth/callback")({
   server: {
@@ -103,13 +51,14 @@ export const Route = createFileRoute("/api/auth/callback")({
             state: rawState,
           })
           const sessionHeaders = extractSessionHeaders(result)
+          const responseHeaders = new Headers({
+            Location: state.returnPathname || "/",
+          })
+          applySessionHeaders(responseHeaders, sessionHeaders)
 
           return new Response(null, {
             status: 307,
-            headers: {
-              Location: state.returnPathname || "/",
-              ...sessionHeaders,
-            },
+            headers: responseHeaders,
           })
         } catch (error: unknown) {
           const rawData = workOsOAuthRawDataFromCatch(error)
@@ -143,11 +92,7 @@ export const Route = createFileRoute("/api/auth/callback")({
                     },
                   })
                 }
-                const apiKey = process.env.WORKOS_API_KEY
-                if (!apiKey) {
-                  throw new Error("WORKOS_API_KEY is not set")
-                }
-                const workOS = new WorkOS(apiKey)
+                const workOS = getWorkOS()
                 const connection = await workOS.sso.getConnection(connectionId)
                 const organizationId = connection.organizationId
                 if (!organizationId) {

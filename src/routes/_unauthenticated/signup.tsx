@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import { getAppName } from "@/lib/app-name"
 import Logo from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,7 +39,7 @@ function RouteComponent() {
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-y-2">
       <Logo className="size-12" />
-      <h1 className="mb-2 text-2xl font-bold">Sign up to XXX</h1>
+      <h1 className="mb-2 text-2xl font-bold">Sign up to {getAppName()}</h1>
       <Card>
         <CardContent className="min-w-80">
           {error && (

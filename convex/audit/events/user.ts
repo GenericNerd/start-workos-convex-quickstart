@@ -1,6 +1,6 @@
 import { v } from "convex/values"
 import { baseFields } from "../base"
-import { changeValidator } from "../utils"
+import type { Infer } from "convex/values"
 
 const vUserCreateEvent = v.object({
   event: v.literal("user.create"),
@@ -19,6 +19,23 @@ const vUserCreateEvent = v.object({
   }),
 })
 
+const vUserUpdateChanges = v.object({
+  before: v.object({
+    email: v.optional(v.string()),
+    emailVerified: v.optional(v.boolean()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    profilePictureUrl: v.optional(v.string()),
+  }),
+  after: v.object({
+    email: v.optional(v.string()),
+    emailVerified: v.optional(v.boolean()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    profilePictureUrl: v.optional(v.string()),
+  }),
+})
+
 const vUserUpdateEvent = v.object({
   event: v.literal("user.update"),
   ...baseFields,
@@ -28,12 +45,7 @@ const vUserUpdateEvent = v.object({
       type: v.literal("user"),
       displayName: v.string(),
     }),
-    changes: changeValidator({
-      emailVerified: v.boolean(),
-      firstName: v.string(),
-      lastName: v.string(),
-      profilePictureUrl: v.string(),
-    }),
+    changes: vUserUpdateChanges,
     reason: v.string(),
   }),
 })
@@ -63,4 +75,5 @@ const vUserDeleteEvent = v.object({
   }),
 })
 
-export { vUserCreateEvent, vUserUpdateEvent, vUserDeleteEvent }
+export { vUserCreateEvent, vUserDeleteEvent, vUserUpdateEvent }
+export type UserUpdateAuditEvent = Infer<typeof vUserUpdateEvent>

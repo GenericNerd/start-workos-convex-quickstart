@@ -5,11 +5,11 @@ import {
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { QueryClient } from "@tanstack/react-query"
 
-import appCss from "../styles.css?url"
 import { createServerFn } from "@tanstack/react-start"
 import { getAuth } from "@workos/authkit-tanstack-react-start"
+import appCss from "../styles.css?url"
+import type { QueryClient } from "@tanstack/react-query"
 import type { ConvexQueryClient } from "@convex-dev/react-query"
 import type { ConvexReactClient } from "convex/react"
 
