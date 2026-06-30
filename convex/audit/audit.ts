@@ -2,17 +2,26 @@ import { v } from "convex/values"
 import { internal } from "../_generated/api"
 import { internalMutation } from "../_generated/server"
 import { vSessionCreateEvent, vSessionRevokeEvent } from "./events/session"
-import { vUserCreateEvent, vUserDeleteEvent } from "./events/user"
+import {
+  vUserCreateEvent,
+  vUserDeleteEvent,
+  vUserUpdateEvent,
+} from "./events/user"
 import type { MutationCtx } from "../_generated/server"
 import type { Infer } from "convex/values"
 
 const vAuditEvent = v.union(vUserCreateEvent, vSessionCreateEvent)
-const vAuditChange = v.union(vUserDeleteEvent, vSessionRevokeEvent)
+const vAuditChange = v.union(
+  vUserDeleteEvent,
+  vUserUpdateEvent,
+  vSessionRevokeEvent
+)
 
 export const vAuditLog = v.union(
   vUserCreateEvent,
   vSessionCreateEvent,
   vUserDeleteEvent,
+  vUserUpdateEvent,
   vSessionRevokeEvent
 )
 

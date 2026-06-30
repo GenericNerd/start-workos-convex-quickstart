@@ -29,10 +29,14 @@ Use it as a starting point for a full-stack app with managed auth and a real-tim
 2. **Convex** — link the project and run the dev deployment (do not use `deploy` for everyday local work):
 
 ```bash
- pnpm dlx convex dev
+pnpm dlx convex dev
 ```
 
-This updates `CONVEX_DEPLOYMENT` and related settings. Copy deployment URL values into your env file as described below. 3. **Environment variables** — create `.env.local` at the repo root (see [Environment variables](#environment-variables)). Never commit real secrets. 4. **WorkOS dashboard** — create an AuthKit application and:
+This updates `CONVEX_DEPLOYMENT` and related settings. Copy deployment URL values into your env file as described below.
+
+3. **Environment variables** — copy `.env.example` to `.env.local` at the repo root (see [Environment variables](#environment-variables)). Never commit real secrets.
+
+4. **WorkOS dashboard** — create an AuthKit application and:
 
 - Set the **redirect URI** to match `WORKOS_REDIRECT_URI` (default for this template: `http://localhost:3000/api/auth/callback` when using `pnpm dev` on port 3000).
 - Enable the sign-in methods (Google, Microsoft, SSO, etc.) that you turn on with the optional `VITE_*` flags.
@@ -77,6 +81,12 @@ Set to the string `true` to show the corresponding option on login/signup. If un
 
 You must still **enable the same providers and connections** in the WorkOS dashboard; these flags only control what the **UI** offers.
 
+### Optional — branding
+
+| Variable        | Description                                                           |
+| --------------- | --------------------------------------------------------------------- |
+| `VITE_APP_NAME` | Product name shown on login/signup headings (defaults to **My App**). |
+
 ### Optional — general
 
 | Variable   | Description                                                                                                        |
@@ -112,7 +122,7 @@ You must still **enable the same providers and connections** in the WorkOS dashb
 
 ## Customizing this template
 
-- Replace placeholder product copy (e.g. “XXX” on login/signup titles) and adjust `__root.tsx` metadata title.
+- Set `VITE_APP_NAME` for login/signup headings (or customize copy in the route files).
 - Replace temporary logo at `src/components/logo.tsx`.
 - Extend `convex/schema.ts` and `convex/auth.ts` carefully: the WorkOS AuthKit **component** has its own mirrored `users` table inside the component; your app table named `users` is separate and populated from webhooks in `auth.ts`.
 - Add Convex env / dashboard configuration for any new server-side secrets.

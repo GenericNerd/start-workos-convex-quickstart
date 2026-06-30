@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import { getAuth } from "@workos/authkit-tanstack-react-start"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getAuth } from "@workos/authkit-tanstack-react-start"
 
 export const Route = createFileRoute("/")({
   component: App,

@@ -3,10 +3,14 @@ import { v } from "convex/values"
 import { log, logChange, maskEmail } from "./audit/audit"
 import { components, internal } from "./_generated/api"
 import { internalAction } from "./_generated/server"
+import { getUserByAuthKitId } from "./auth/utils"
+import type { vUserUpdateEvent } from "./audit/events/user"
 import type { DataModel } from "./_generated/dataModel"
 import type { AuthFunctions } from "@convex-dev/workos-authkit"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
-import { getUserByAuthKitId } from "./auth/utils"
+import type { Infer } from "convex/values"
+
+type UserUpdateAuditEvent = Infer<typeof vUserUpdateEvent>
 
 export const authKit: AuthKit<DataModel> = new AuthKit<DataModel>(
   components.workOSAuthKit,
@@ -46,7 +50,7 @@ export const { authKitEvent } = authKit.events({
       emailVerified: event.data.emailVerified,
       profilePictureUrl: event.data.profilePictureUrl,
     })
-    ctx.scheduler.runAfter(0, internal.auth.updateUserExternalId, {
+    await ctx.scheduler.runAfter(0, internal.auth.updateUserExternalId, {
       userId: event.data.id,
       externalId: user,
     })
@@ -73,8 +77,78 @@ export const { authKitEvent } = authKit.events({
     })
     return
   },
-  "user.updated": (_ctx, _event) => {
-    return Promise.resolve()
+  "user.updated": async (ctx, event) => {
+    const user = await getUserByAuthKitId(ctx, event.data.id)
+    if (!user) {
+      console.warn(`User not found: ${event.data.id}`)
+      return
+    }
+
+    const newFirstName = event.data.firstName ?? ""
+    const newLastName = event.data.lastName ?? ""
+    const newProfilePictureUrl = event.data.profilePictureUrl ?? ""
+
+    const before: {
+      emailVerified?: boolean
+      firstName?: string
+      lastName?: string
+      profilePictureUrl?: string
+    } = {}
+    const after: {
+      emailVerified?: boolean
+      firstName?: string
+      lastName?: string
+      profilePictureUrl?: string
+    } = {}
+
+    if (user.emailVerified !== event.data.emailVerified) {
+      before.emailVerified = user.emailVerified
+      after.emailVerified = event.data.emailVerified
+    }
+    if ((user.firstName ?? "") !== newFirstName) {
+      before.firstName = user.firstName ?? ""
+      after.firstName = newFirstName
+    }
+    if ((user.lastName ?? "") !== newLastName) {
+      before.lastName = user.lastName ?? ""
+      after.lastName = newLastName
+    }
+    if ((user.profilePictureUrl ?? "") !== newProfilePictureUrl) {
+      before.profilePictureUrl = user.profilePictureUrl ?? ""
+      after.profilePictureUrl = newProfilePictureUrl
+    }
+
+    await ctx.db.patch("users", user._id, {
+      firstName: event.data.firstName,
+      lastName: event.data.lastName,
+      email: event.data.email,
+      emailVerified: event.data.emailVerified,
+      profilePictureUrl: event.data.profilePictureUrl,
+    })
+
+    if (Object.keys(after).length === 0) {
+      return
+    }
+
+    await logChange(ctx, {
+      occurredAt: new Date(event.data.updatedAt).getTime(),
+      actor: {
+        id: user._id,
+        type: "user",
+      },
+      event: "user.update",
+      status: "success",
+      data: {
+        target: {
+          id: user._id,
+          type: "user",
+          displayName: maskEmail(event.data.email),
+        },
+        changes: { before, after },
+        reason: "Profile updated",
+      },
+    } as UserUpdateAuditEvent)
+    return
   },
   "user.deleted": async (ctx, event) => {
     const user = await getUserByAuthKitId(ctx, event.data.id)
@@ -110,7 +184,7 @@ export const { authKitEvent } = authKit.events({
         reason: "User requested deletion",
       },
     })
-    await ctx.db.delete(user._id)
+    await ctx.db.delete("users", user._id)
     return
   },
   "session.created": async (ctx, event) => {

@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
 import { zodValidator } from "@tanstack/zod-adapter"
-import { WorkOS } from "@workos-inc/node"
 import z from "zod"
 import type { ReactNode } from "react"
+import { getWorkOS } from "@/lib/workos"
 import AppleLogo from "@/components/logos/apple"
 import GitHubLogo from "@/components/logos/github"
 import GoogleLogo from "@/components/logos/google"
@@ -33,8 +33,7 @@ export const listConnections = createServerFn()
     )
   )
   .handler(async ({ data }) => {
-    // TODO: Replace with singleton
-    const workOS = new WorkOS(process.env.WORKOS_API_KEY)
+    const workOS = getWorkOS()
 
     const availableProviders = [
       {

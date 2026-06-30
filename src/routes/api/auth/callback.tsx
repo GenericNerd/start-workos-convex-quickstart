@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getAuthkit } from "@workos/authkit-tanstack-react-start"
-import { WorkOS } from "@workos-inc/node"
 import type { WorkOsOAuthRawData } from "@/lib/workos-oauth-error"
+import { getWorkOS } from "@/lib/workos"
 import { workOsOAuthRawDataFromCatch } from "@/lib/workos-oauth-error"
 
 function parseOAuthState(rawState: string):
@@ -143,11 +143,7 @@ export const Route = createFileRoute("/api/auth/callback")({
                     },
                   })
                 }
-                const apiKey = process.env.WORKOS_API_KEY
-                if (!apiKey) {
-                  throw new Error("WORKOS_API_KEY is not set")
-                }
-                const workOS = new WorkOS(apiKey)
+                const workOS = getWorkOS()
                 const connection = await workOS.sso.getConnection(connectionId)
                 const organizationId = connection.organizationId
                 if (!organizationId) {

@@ -1,6 +1,5 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
 import { ConvexQueryClient } from "@convex-dev/react-query"
-import { routeTree } from "./routeTree.gen"
 import { QueryClient } from "@tanstack/react-query"
 import { ConvexProviderWithAuth, ConvexReactClient } from "convex/react"
 import {
@@ -10,6 +9,7 @@ import {
 } from "@workos/authkit-tanstack-react-start/client"
 import { useCallback, useMemo } from "react"
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
+import { routeTree } from "./routeTree.gen"
 
 function useAuthFromAuthKit() {
   const { loading, user } = useAuth()

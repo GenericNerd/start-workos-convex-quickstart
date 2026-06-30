@@ -1,6 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { WorkOS } from "@workos-inc/node"
 import { z } from "zod"
 import { zodValidator } from "@tanstack/zod-adapter"
 import { ArrowRight } from "lucide-react"
@@ -8,6 +7,8 @@ import { formOptions, useForm } from "@tanstack/react-form-start"
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import { getCookie, setCookie } from "@tanstack/react-start/server"
+import { getWorkOS } from "@/lib/workos"
+import { getAppName } from "@/lib/app-name"
 import { Input } from "@/components/ui/input"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
@@ -31,7 +32,7 @@ const getSSOUrl = createServerFn()
     )
   )
   .handler(async ({ data }) => {
-    const workOS = new WorkOS(process.env.WORKOS_API_KEY)
+    const workOS = getWorkOS()
 
     const connection = await workOS.sso.listConnections({
       domain: data.domain,
@@ -141,7 +142,7 @@ function RouteComponent() {
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-y-2">
       <Logo className="size-12" />
-      <h1 className="mb-2 text-2xl font-bold">Log in to XXX</h1>
+      <h1 className="mb-2 text-2xl font-bold">Log in to {getAppName()}</h1>
       <Card>
         <motion.div
           layout
