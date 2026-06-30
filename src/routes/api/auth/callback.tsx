@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getAuthkit } from "@workos/authkit-tanstack-react-start"
 import {
+  applySessionHeaders,
   extractSessionHeaders,
   firstSsoConnectionId,
   parseOAuthState,
@@ -50,13 +51,14 @@ export const Route = createFileRoute("/api/auth/callback")({
             state: rawState,
           })
           const sessionHeaders = extractSessionHeaders(result)
+          const responseHeaders = new Headers({
+            Location: state.returnPathname || "/",
+          })
+          applySessionHeaders(responseHeaders, sessionHeaders)
 
           return new Response(null, {
             status: 307,
-            headers: {
-              Location: state.returnPathname || "/",
-              ...sessionHeaders,
-            },
+            headers: responseHeaders,
           })
         } catch (error: unknown) {
           const rawData = workOsOAuthRawDataFromCatch(error)

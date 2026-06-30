@@ -5,6 +5,11 @@ export type ParsedOAuthState = {
   errorPathname: string
 }
 
+export type ExtractedSessionHeaders = {
+  setCookies: Array<string>
+  headers: Record<string, string>
+}
+
 export function parseOAuthState(
   rawState: string
 ): ParsedOAuthState | undefined {
@@ -47,20 +52,60 @@ export function firstSsoConnectionId(
   return typeof first === "string" ? first : undefined
 }
 
-export function extractSessionHeaders(result: unknown): Record<string, string> {
-  if (typeof result !== "object" || result === null) {
-    return {}
+function appendSetCookie(setCookies: Array<string>, value: string | undefined) {
+  if (value) {
+    setCookies.push(value)
   }
+}
+
+export function extractSessionHeaders(
+  result: unknown
+): ExtractedSessionHeaders {
+  const setCookies: Array<string> = []
+  const headers: Record<string, string> = {}
+
+  if (typeof result !== "object" || result === null) {
+    return { setCookies, headers }
+  }
+
   const r = result as {
-    response?: { headers?: { get?: (name: string) => string | null } }
+    response?: {
+      headers?: {
+        get?: (name: string) => string | null
+        getSetCookie?: () => Array<string>
+      }
+    }
     headers?: Record<string, string>
   }
-  const setCookie = r.response?.headers?.get?.("Set-Cookie")
-  if (setCookie) {
-    return { "Set-Cookie": setCookie }
+
+  const responseHeaders = r.response?.headers
+  if (responseHeaders?.getSetCookie) {
+    setCookies.push(...responseHeaders.getSetCookie())
+  } else {
+    appendSetCookie(setCookies, responseHeaders?.get?.("Set-Cookie") ?? undefined)
   }
+
   if (r.headers && typeof r.headers === "object") {
-    return r.headers
+    for (const [key, value] of Object.entries(r.headers)) {
+      if (key.toLowerCase() === "set-cookie") {
+        appendSetCookie(setCookies, value)
+      } else {
+        headers[key] = value
+      }
+    }
   }
-  return {}
+
+  return { setCookies, headers }
+}
+
+export function applySessionHeaders(
+  responseHeaders: Headers,
+  extracted: ExtractedSessionHeaders
+): void {
+  for (const [key, value] of Object.entries(extracted.headers)) {
+    responseHeaders.set(key, value)
+  }
+  for (const cookie of extracted.setCookies) {
+    responseHeaders.append("Set-Cookie", cookie)
+  }
 }

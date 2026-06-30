@@ -4,13 +4,76 @@ import { log, logChange, maskEmail } from "./audit/audit"
 import { components, internal } from "./_generated/api"
 import { internalAction } from "./_generated/server"
 import { getUserByAuthKitId } from "./auth/utils"
-import type { vUserUpdateEvent } from "./audit/events/user"
+import type { UserUpdateAuditEvent } from "./audit/events/user"
 import type { DataModel } from "./_generated/dataModel"
 import type { AuthFunctions } from "@convex-dev/workos-authkit"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
-import type { Infer } from "convex/values"
 
-type UserUpdateAuditEvent = Infer<typeof vUserUpdateEvent>
+type UserProfileSnapshot = {
+  email: string
+  emailVerified: boolean
+  firstName: string
+  lastName: string
+  profilePictureUrl: string
+}
+
+function snapshotUserProfile(user: {
+  email: string
+  emailVerified: boolean
+  firstName?: string | null
+  lastName?: string | null
+  profilePictureUrl?: string | null
+}): UserProfileSnapshot {
+  return {
+    email: user.email,
+    emailVerified: user.emailVerified,
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    profilePictureUrl: user.profilePictureUrl ?? "",
+  }
+}
+
+function buildUserUpdateChanges(
+  beforeSnapshot: UserProfileSnapshot,
+  afterSnapshot: UserProfileSnapshot
+): UserUpdateAuditEvent["data"]["changes"] {
+  const before: UserUpdateAuditEvent["data"]["changes"]["before"] = {}
+  const after: UserUpdateAuditEvent["data"]["changes"]["after"] = {}
+
+  if (beforeSnapshot.email !== afterSnapshot.email) {
+    before.email = beforeSnapshot.email
+    after.email = afterSnapshot.email
+  }
+  if (beforeSnapshot.emailVerified !== afterSnapshot.emailVerified) {
+    before.emailVerified = beforeSnapshot.emailVerified
+    after.emailVerified = afterSnapshot.emailVerified
+  }
+  if (beforeSnapshot.firstName !== afterSnapshot.firstName) {
+    before.firstName = beforeSnapshot.firstName
+    after.firstName = afterSnapshot.firstName
+  }
+  if (beforeSnapshot.lastName !== afterSnapshot.lastName) {
+    before.lastName = beforeSnapshot.lastName
+    after.lastName = afterSnapshot.lastName
+  }
+  if (beforeSnapshot.profilePictureUrl !== afterSnapshot.profilePictureUrl) {
+    before.profilePictureUrl = beforeSnapshot.profilePictureUrl
+    after.profilePictureUrl = afterSnapshot.profilePictureUrl
+  }
+
+  return { before, after }
+}
+
+function toStoredProfile(snapshot: UserProfileSnapshot) {
+  return {
+    email: snapshot.email,
+    emailVerified: snapshot.emailVerified,
+    firstName: snapshot.firstName === "" ? null : snapshot.firstName,
+    lastName: snapshot.lastName === "" ? null : snapshot.lastName,
+    profilePictureUrl:
+      snapshot.profilePictureUrl === "" ? null : snapshot.profilePictureUrl,
+  }
+}
 
 export const authKit: AuthKit<DataModel> = new AuthKit<DataModel>(
   components.workOSAuthKit,
@@ -84,53 +147,17 @@ export const { authKitEvent } = authKit.events({
       return
     }
 
-    const newFirstName = event.data.firstName ?? ""
-    const newLastName = event.data.lastName ?? ""
-    const newProfilePictureUrl = event.data.profilePictureUrl ?? ""
+    const beforeSnapshot = snapshotUserProfile(user)
+    const afterSnapshot = snapshotUserProfile(event.data)
+    const changes = buildUserUpdateChanges(beforeSnapshot, afterSnapshot)
 
-    const before: {
-      emailVerified?: boolean
-      firstName?: string
-      lastName?: string
-      profilePictureUrl?: string
-    } = {}
-    const after: {
-      emailVerified?: boolean
-      firstName?: string
-      lastName?: string
-      profilePictureUrl?: string
-    } = {}
+    await ctx.db.patch("users", user._id, toStoredProfile(afterSnapshot))
 
-    if (user.emailVerified !== event.data.emailVerified) {
-      before.emailVerified = user.emailVerified
-      after.emailVerified = event.data.emailVerified
-    }
-    if ((user.firstName ?? "") !== newFirstName) {
-      before.firstName = user.firstName ?? ""
-      after.firstName = newFirstName
-    }
-    if ((user.lastName ?? "") !== newLastName) {
-      before.lastName = user.lastName ?? ""
-      after.lastName = newLastName
-    }
-    if ((user.profilePictureUrl ?? "") !== newProfilePictureUrl) {
-      before.profilePictureUrl = user.profilePictureUrl ?? ""
-      after.profilePictureUrl = newProfilePictureUrl
-    }
-
-    await ctx.db.patch("users", user._id, {
-      firstName: event.data.firstName,
-      lastName: event.data.lastName,
-      email: event.data.email,
-      emailVerified: event.data.emailVerified,
-      profilePictureUrl: event.data.profilePictureUrl,
-    })
-
-    if (Object.keys(after).length === 0) {
+    if (Object.keys(changes.after).length === 0) {
       return
     }
 
-    await logChange(ctx, {
+    const auditEvent: UserUpdateAuditEvent = {
       occurredAt: new Date(event.data.updatedAt).getTime(),
       actor: {
         id: user._id,
@@ -142,12 +169,14 @@ export const { authKitEvent } = authKit.events({
         target: {
           id: user._id,
           type: "user",
-          displayName: maskEmail(event.data.email),
+          displayName: maskEmail(afterSnapshot.email),
         },
-        changes: { before, after },
+        changes,
         reason: "Profile updated",
       },
-    } as UserUpdateAuditEvent)
+    }
+
+    await logChange(ctx, auditEvent)
     return
   },
   "user.deleted": async (ctx, event) => {

@@ -59,7 +59,22 @@ describe("firstSsoConnectionId", () => {
 })
 
 describe("extractSessionHeaders", () => {
-  it("prefers Set-Cookie from a fetch-like response object", () => {
+  it("collects every Set-Cookie from getSetCookie()", () => {
+    expect(
+      extractSessionHeaders({
+        response: {
+          headers: {
+            getSetCookie: () => ["session=abc", "pkce=delete"],
+          },
+        },
+      })
+    ).toEqual({
+      setCookies: ["session=abc", "pkce=delete"],
+      headers: {},
+    })
+  })
+
+  it("falls back to a single Set-Cookie from response.headers.get", () => {
     expect(
       extractSessionHeaders({
         response: {
@@ -69,19 +84,31 @@ describe("extractSessionHeaders", () => {
           },
         },
       })
-    ).toEqual({ "Set-Cookie": "session=abc" })
+    ).toEqual({
+      setCookies: ["session=abc"],
+      headers: {},
+    })
   })
 
-  it("falls back to a plain headers object", () => {
+  it("collects Set-Cookie values from a plain headers object", () => {
     expect(
       extractSessionHeaders({
         headers: { "Set-Cookie": "session=xyz" },
       })
-    ).toEqual({ "Set-Cookie": "session=xyz" })
+    ).toEqual({
+      setCookies: ["session=xyz"],
+      headers: {},
+    })
   })
 
-  it("returns an empty object for unsupported values", () => {
-    expect(extractSessionHeaders(null)).toEqual({})
-    expect(extractSessionHeaders("nope")).toEqual({})
+  it("returns empty collections for unsupported values", () => {
+    expect(extractSessionHeaders(null)).toEqual({
+      setCookies: [],
+      headers: {},
+    })
+    expect(extractSessionHeaders("nope")).toEqual({
+      setCookies: [],
+      headers: {},
+    })
   })
 })
