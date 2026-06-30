@@ -118,7 +118,8 @@ You must still **enable the same providers and connections** in the WorkOS dashb
 | `pnpm build`     | Production build.                                          |
 | `pnpm typecheck` | `tsc --noEmit`.                                            |
 | `pnpm lint`      | ESLint.                                                    |
-| `pnpm test`      | Vitest.                                                    |
+| `pnpm test`      | Vitest unit tests.                                       |
+| `pnpm check`     | Typecheck, lint, and test (used in GitHub Actions).      |
 
 ## Customizing this template
 
